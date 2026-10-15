@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage.js';
+import { ROUTES, ERROR_MESSAGES, HEADERS } from '../utils/index.js';
 import testData from '../test-data/users.json' with { type: 'json' };
 
 test.describe('Swag Labs - Authentication Suite', () => {
@@ -18,7 +19,7 @@ test.describe('Swag Labs - Authentication Suite', () => {
 
     // Verify error banner is visible and has correct message
     await expect(loginPage.errorMessage).toBeVisible();
-    await expect(loginPage.errorMessage).toContainText('Epic sadface: Sorry, this user has been locked out.');
+    await expect(loginPage.errorMessage).toContainText(ERROR_MESSAGES.LOCKED_OUT);
   });
 
   test('TC02 - Positive: Standard user should log in successfully and redirect to inventory', async ({ page }) => {
@@ -28,7 +29,7 @@ test.describe('Swag Labs - Authentication Suite', () => {
     );
 
     // Verify successful redirection to inventory
-    await expect(page).toHaveURL(/.*inventory.html/);
-    await expect(page.locator('.title')).toHaveText('Products');
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await expect(page.locator('.title')).toHaveText(HEADERS.PRODUCTS);
   });
 });

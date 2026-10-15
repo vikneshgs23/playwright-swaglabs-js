@@ -1,5 +1,5 @@
 export const ROUTES = {
-  LOGIN: '/',
+  HOME: '/',
   INVENTORY: '/inventory.html',
   CART: '/cart.html',
   CHECKOUT_STEP_ONE: '/checkout-step-one.html',
@@ -12,4 +12,11 @@ export const ERROR_MESSAGES = {
   REQUIRED_USERNAME: 'Epic sadface: Username is required',
   REQUIRED_PASSWORD: 'Epic sadface: Password is required',
   USER_NOT_MATCH: 'Epic sadface: Username and password do not match any user in this service',
+};
+
+export const HEADERS = {
+  PRODUCTS: 'Products',
+  CART: 'Your Cart',
+  CHECKOUT_OVERVIEW: 'Checkout: Overview',
+  COMPLETE: 'Thank you for your order!',
 };
