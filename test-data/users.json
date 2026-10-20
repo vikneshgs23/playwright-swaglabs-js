@@ -6,5 +6,10 @@
   "lockedUser": {
     "username": "locked_out_user",
     "password": "secret_sauce"
+  },
+  "customer": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "postalCode": "600001"
   }
 }
