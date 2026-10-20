@@ -11,6 +11,7 @@ export const ERROR_MESSAGES = {
   LOCKED_OUT: 'Epic sadface: Sorry, this user has been locked out.',
   REQUIRED_USERNAME: 'Epic sadface: Username is required',
   REQUIRED_PASSWORD: 'Epic sadface: Password is required',
+  REQUIRED_POSTAL_CODE: 'Error: Postal Code is required',
   USER_NOT_MATCH: 'Epic sadface: Username and password do not match any user in this service',
 };
 
