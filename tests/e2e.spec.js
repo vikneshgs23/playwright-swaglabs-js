@@ -73,6 +73,45 @@ test.describe('Swag Labs - End-to-End User Journeys', () => {
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_COMPLETE));
     await expect(stepTwoPage.completeHeader).toHaveText(HEADERS.COMPLETE);
   });
+  test('TC_E2E_002 - Add three items, remove one, and verify state across Cart and Inventory', async ({ page }) => {
+    const item1 = 'Sauce Labs Backpack';
+    const item2 = 'Sauce Labs Bike Light';
+    const item3 = 'Sauce Labs Bolt T-Shirt';
 
-  
+    // 1. Log in with valid credentials
+    await loginPage.login(
+      testData.validUser.username,
+      testData.validUser.password
+    );
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
+
+    // 2. Add three items to the cart from the inventory page
+    await inventoryPage.addItemToCart(item1);
+    await inventoryPage.addItemToCart(item2);
+    await inventoryPage.addItemToCart(item3);
+
+    // 3. Verify cart badge displays '3'
+    await expect(inventoryPage.shoppingCartBadge).toHaveText('3');
+
+    // 4. Click the cart icon to view cart
+    await inventoryPage.openCart();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
+
+    // 5. Click 'Remove' on one item
+    await cartPage.removeItemByName(item1);
+
+    // 6. Verify cart badge updates to '2'
+    await expect(inventoryPage.shoppingCartBadge).toHaveText('2');
+    await expect(cartPage.getCartItemByName(item1)).toHaveCount(0);
+
+    // 7. Click 'Continue Shopping'
+    await cartPage.continueShopping();
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+
+    // 8. Verify the removed item shows 'Add to cart' on the inventory page
+    const removedItemCard = inventoryPage.getItemCardByName(item1);
+    await expect(removedItemCard.getByRole('button', { name: 'Add to cart' })).toBeVisible();
+  });
+
 });
