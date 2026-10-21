@@ -46,7 +46,7 @@ test.describe('Swag Labs - End-to-End User Journeys', () => {
     await expect(page).toHaveURL(new RegExp(ROUTES.CART));
 
     // 4. Verify selected items are listed, then click 'Checkout'
-    expect(await cartPage.getCartItemCount()).toBe(2);
+    await expect(cartPage.cartItems).toHaveCount(2);
     await expect(cartPage.getCartItemByName(item1)).toBeVisible();
     await expect(cartPage.getCartItemByName(item2)).toBeVisible();
     await cartPage.proceedToCheckout();
