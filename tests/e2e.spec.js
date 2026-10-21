@@ -74,5 +74,5 @@ test.describe('Swag Labs - End-to-End User Journeys', () => {
     await expect(stepTwoPage.completeHeader).toHaveText(HEADERS.COMPLETE);
   });
 
-  // You can cleanly add TC_E2E_002, TC_E2E_003, etc., right here below
+  
 });
