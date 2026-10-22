@@ -113,5 +113,46 @@ test.describe('Swag Labs - End-to-End User Journeys', () => {
     const removedItemCard = inventoryPage.getItemCardByName(item1);
     await expect(removedItemCard.getByRole('button', { name: 'Add to cart' })).toBeVisible();
   });
+  test('TC_E2E_003 - Verify product catalog sorting by price and name', async ({ page }) => {
+    // 1. Log in with valid credentials
+    await loginPage.login(
+      testData.validUser.username,
+      testData.validUser.password
+    );
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
+
+    // 2. Select sort filter 'Price (low to high)' ('lohi')
+    await inventoryPage.selectSortOption('lohi');
+
+    // 3. Verify inventory list sorts prices in ascending order
+    // Auto-waits for the first price to reflect the lowest catalog price ($7.99)
+    await expect(inventoryPage.itemPrices.first()).toHaveText('$7.99');
+    const rawPricesLowToHigh = await inventoryPage.itemPrices.allTextContents();
+    const numericPricesLowToHigh = rawPricesLowToHigh.map(price => parseFloat(price.replace('$', '')));
+    const expectedSortedLowToHigh = [...numericPricesLowToHigh].sort((a, b) => a - b);
+    expect(numericPricesLowToHigh).toEqual(expectedSortedLowToHigh);
+
+    // 4. Select sort filter 'Price (high to low)' ('hilo')
+    await inventoryPage.selectSortOption('hilo');
+
+    // 5. Verify inventory list sorts prices in descending order
+    // Auto-waits for the first price to reflect the highest catalog price ($49.99)
+    await expect(inventoryPage.itemPrices.first()).toHaveText('$49.99');
+    const rawPricesHighToLow = await inventoryPage.itemPrices.allTextContents();
+    const numericPricesHighToLow = rawPricesHighToLow.map(price => parseFloat(price.replace('$', '')));
+    const expectedSortedHighToLow = [...numericPricesHighToLow].sort((a, b) => b - a);
+    expect(numericPricesHighToLow).toEqual(expectedSortedHighToLow);
+
+    // 6. Select sort filter 'Name (Z to A)' ('za')
+    await inventoryPage.selectSortOption('za');
+
+    // 7. Verify product names sort alphabetically descending
+    // Auto-waits for the first product title to match the Z-A leader
+    await expect(inventoryPage.itemNames.first()).toHaveText('Test.allTheThings() T-Shirt (Red)');
+    const rawNamesZtoA = await inventoryPage.getAllProductNames();
+    const expectedSortedZtoA = [...rawNamesZtoA].sort((a, b) => b.localeCompare(a));
+    expect(rawNamesZtoA).toEqual(expectedSortedZtoA);
+  });
 
 });
