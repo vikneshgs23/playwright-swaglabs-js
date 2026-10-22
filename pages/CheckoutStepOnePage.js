@@ -33,9 +33,9 @@ export class CheckoutStepOnePage {
    * @param {string} postalCode
    */
   async fillCustomerInformation(firstName, lastName, postalCode) {
-    if (firstName) await this.firstNameInput.fill(firstName);
-    if (lastName) await this.lastNameInput.fill(lastName);
-    if (postalCode) await this.postalCodeInput.fill(postalCode);
+    await this.firstNameInput.fill(firstName ?? '');
+    await this.lastNameInput.fill(lastName ?? '');
+    await this.postalCodeInput.fill(postalCode ?? '');
     await this.continueButton.click();
   }
 

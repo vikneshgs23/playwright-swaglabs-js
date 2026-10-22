@@ -154,5 +154,49 @@ test.describe('Swag Labs - End-to-End User Journeys', () => {
     const expectedSortedZtoA = [...rawNamesZtoA].sort((a, b) => b.localeCompare(a));
     expect(rawNamesZtoA).toEqual(expectedSortedZtoA);
   });
+  test('TC_E2E_004 - Verify checkout step one mandatory field validations', async ({ page }) => {
+    const item = 'Sauce Labs Backpack';
+
+    // 1. Log in and add an item to the cart
+    await loginPage.login(
+      testData.validUser.username,
+      testData.validUser.password
+    );
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await inventoryPage.addItemToCart(item);
+
+    // 2. Navigate to cart and click 'Checkout'
+    await inventoryPage.openCart();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
+    await cartPage.proceedToCheckout();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+
+    // 3. Leave First Name empty, fill other fields, click 'Continue'
+    await stepOnePage.fillCustomerInformation(
+      '',
+      testData.customer.lastName,
+      testData.customer.postalCode
+    );
+    await expect(stepOnePage.errorMessage).toBeVisible();
+    await expect(stepOnePage.errorMessage).toHaveText('Error: First Name is required');
+
+    // 4. Fill First Name, leave Last Name empty, click 'Continue'
+    await stepOnePage.fillCustomerInformation(
+      testData.customer.firstName,
+      '',
+      testData.customer.postalCode
+    );
+    await expect(stepOnePage.errorMessage).toBeVisible();
+    await expect(stepOnePage.errorMessage).toHaveText('Error: Last Name is required');
+
+    // 5. Fill Last Name, leave Postal Code empty, click 'Continue'
+    await stepOnePage.fillCustomerInformation(
+      testData.customer.firstName,
+      testData.customer.lastName,
+      ''
+    );
+    await expect(stepOnePage.errorMessage).toBeVisible();
+    await expect(stepOnePage.errorMessage).toHaveText(ERROR_MESSAGES.REQUIRED_POSTAL_CODE);
+  });
 
 });
