@@ -4,7 +4,7 @@ import { InventoryPage } from '../pages/InventoryPage.js';
 import { CartPage } from '../pages/CartPage.js';
 import { CheckoutStepOnePage } from '../pages/CheckoutStepOnePage.js';
 import { CheckoutStepTwoPage } from '../pages/CheckoutStepTwoPage.js';
-import { ROUTES, HEADERS } from '../utils/index.js';
+import { ROUTES, HEADERS, ERROR_MESSAGES } from '../utils/index.js';
 import testData from '../test-data/users.json' with { type: 'json' };
 
 test.describe('Swag Labs - End-to-End User Journeys', () => {
