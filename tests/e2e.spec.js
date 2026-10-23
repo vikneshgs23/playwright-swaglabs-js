@@ -243,5 +243,45 @@ test.describe('Swag Labs - End-to-End User Journeys', () => {
     await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
     await expect(inventoryPage.shoppingCartBadge).toHaveText('1');
   });
+  test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfillable last name)', async ({ page }) => {
+    const item = 'Sauce Labs Backpack';
+
+    // 1. Log in with problem_user
+    await loginPage.login('problem_user', testData.validUser.password);
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
+
+    // 2. Inspect product images on the catalog (known bug: images point to sl-404 dog photo)
+    const allImages = page.locator('.inventory_item_img img');
+    const imageCount = await allImages.count();
+    for (let i = 0; i < imageCount; i++) {
+      await expect(allImages.nth(i)).toHaveAttribute('src', /sl-404/);
+    }
+
+    // 3. Add 'Sauce Labs Backpack' to the cart
+    await inventoryPage.addItemToCart(item);
+    await expect(inventoryPage.shoppingCartBadge).toHaveText('1');
+
+    // 4. Navigate to checkout and attempt to fill 'Last Name'
+    await inventoryPage.openCart();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
+    await cartPage.proceedToCheckout();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+
+    await stepOnePage.firstNameInput.fill(testData.customer.firstName);
+    // problem_user bug: typing into the Last Name field does not populate it
+    await stepOnePage.lastNameInput.focus();
+    await stepOnePage.lastNameInput.pressSequentially('Doe');
+    await stepOnePage.postalCodeInput.fill(testData.customer.postalCode);
+
+    // Verify the input field refused the input and remains empty
+    await expect(stepOnePage.lastNameInput).toHaveValue('');
+
+    // 5. Click 'Continue' and verify the validation blocks progress
+    await stepOnePage.continueButton.click();
+    await expect(stepOnePage.errorMessage).toBeVisible();
+    await expect(stepOnePage.errorMessage).toHaveText('Error: Last Name is required');
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+  });
 
 });
