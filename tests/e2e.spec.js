@@ -278,5 +278,51 @@ test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfi
     await expect(stepOnePage.errorMessage).toHaveText('Error: Last Name is required');
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
   });
+  test('TC_E2E_007 - Verify session termination, browser back prevention, and direct route access block', async ({ page }) => {
+    const item1 = 'Sauce Labs Backpack';
+    const item2 = 'Sauce Labs Bike Light';
+
+    // 1. Log in, add two items to the cart
+    await loginPage.login(
+      testData.validUser.username,
+      testData.validUser.password
+    );
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await inventoryPage.addItemToCart(item1);
+    await inventoryPage.addItemToCart(item2);
+    await expect(inventoryPage.shoppingCartBadge).toHaveText('2');
+
+    // 2. Open the burger menu sidebar
+    await page.getByRole('button', { name: 'Open Menu' }).click();
+    const logoutLink = page.locator('[data-test="logout-sidebar-link"]');
+    await expect(logoutLink).toBeVisible();
+
+    // 3. Click 'Logout'
+    await logoutLink.click();
+
+    // 4. Verify user is on the login page
+    await expect(page).toHaveURL(new RegExp(ROUTES.BASE));
+    await expect(loginPage.loginButton).toBeVisible();
+
+    // 5. Click the browser's Back button
+    await page.goBack();
+
+    // Verify back navigation is intercepted and redirected back to the login page with an error
+    await expect(page).toHaveURL(new RegExp(ROUTES.BASE));
+    await expect(loginPage.errorMessage).toBeVisible();
+    await expect(loginPage.errorMessage).toContainText(
+      "You can only access '/inventory.html' when you are logged in."
+    );
+
+    // 6. Attempt to access inventory directly via URL bar
+    await page.goto('/inventory.html');
+
+    // Verify direct navigation without an active session is blocked and redirects to login
+    await expect(page).toHaveURL(new RegExp(ROUTES.BASE));
+    await expect(loginPage.errorMessage).toBeVisible();
+    await expect(loginPage.errorMessage).toContainText(
+      "You can only access '/inventory.html' when you are logged in."
+    );
+  });
 
 });
