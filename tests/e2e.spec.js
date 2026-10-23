@@ -251,7 +251,7 @@ test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfi
     await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
     await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
 
-    // 2. Inspect product images on the catalog (verify defect: first catalog item renders sl-404)
+    // 2. Inspect product image (assert first image renders broken sl-404 link)
     const firstProductImg = page.locator('.inventory_item_img img').first();
     await expect(firstProductImg).toBeVisible();
     await expect(firstProductImg).toHaveAttribute('src', /sl-404/);
@@ -267,10 +267,9 @@ test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfi
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
 
     await stepOnePage.firstNameInput.fill(testData.customer.firstName);
-    
-    // problem_user defect: typing into Last Name fails or gets discarded
-    // Using standard fill/type that resolves immediately without stalling event loop
-    await stepOnePage.lastNameInput.pressSequentially('Doe', { delay: 20 });
+
+    // problem_user defect: typing into the Last Name field does not populate it
+    await stepOnePage.lastNameInput.pressSequentially('Doe', { delay: 10 });
     await stepOnePage.postalCodeInput.fill(testData.customer.postalCode);
 
     // 5. Click 'Continue' and verify validation blocks progress due to missing Last Name
