@@ -198,5 +198,50 @@ test.describe('Swag Labs - End-to-End User Journeys', () => {
     await expect(stepOnePage.errorMessage).toBeVisible();
     await expect(stepOnePage.errorMessage).toHaveText(ERROR_MESSAGES.REQUIRED_POSTAL_CODE);
   });
+  test('TC_E2E_005 - Verify cancellation flows at checkout step one and step two', async ({ page }) => {
+    const item = 'Sauce Labs Fleece Jacket';
+
+    // 1. Log in and add 'Sauce Labs Fleece Jacket' to the cart
+    await loginPage.login(
+      testData.validUser.username,
+      testData.validUser.password
+    );
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await inventoryPage.addItemToCart(item);
+
+    // 2. Navigate to Cart and click 'Checkout'
+    await inventoryPage.openCart();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
+    await cartPage.proceedToCheckout();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+
+    // 3. Click 'Cancel' on the 'Checkout: Your Information' page
+    await stepOnePage.cancelCheckout();
+
+    // 4. Verify navigation returns to 'Your Cart' with the item preserved
+    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
+    await expect(cartPage.title).toHaveText(HEADERS.CART);
+    await expect(cartPage.cartItems).toHaveCount(1);
+    await expect(cartPage.getCartItemByName(item)).toBeVisible();
+
+    // 5. Click 'Checkout', fill required details, and click 'Continue'
+    await cartPage.proceedToCheckout();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+    await stepOnePage.fillCustomerInformation(
+      testData.customer.firstName,
+      testData.customer.lastName,
+      testData.customer.postalCode
+    );
+
+    // 6. On 'Checkout: Overview', click 'Cancel'
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_TWO));
+    await expect(stepTwoPage.title).toHaveText(HEADERS.CHECKOUT_OVERVIEW);
+    await stepTwoPage.cancelOrder();
+
+    // Verify cancellation returns to the Products inventory page with cart item still preserved
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
+    await expect(inventoryPage.shoppingCartBadge).toHaveText('1');
+  });
 
 });
