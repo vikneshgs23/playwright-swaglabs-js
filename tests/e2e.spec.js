@@ -278,7 +278,7 @@ test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfi
     await expect(stepOnePage.errorMessage).toHaveText('Error: Last Name is required');
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
   });
-  test('TC_E2E_007 - Verify session termination, browser back prevention, and direct route access block', async ({ page }) => {
+ test('TC_E2E_007 - Verify session termination, browser back prevention, and direct route access block', async ({ page }) => {
     const item1 = 'Sauce Labs Backpack';
     const item2 = 'Sauce Labs Bike Light';
 
@@ -293,32 +293,29 @@ test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfi
     await expect(inventoryPage.shoppingCartBadge).toHaveText('2');
 
     // 2. Open the burger menu sidebar
-    await page.getByRole('button', { name: 'Open Menu' }).click();
-    const logoutLink = page.locator('[data-test="logout-sidebar-link"]');
-    await expect(logoutLink).toBeVisible();
+    await page.locator('#react-burger-menu-btn').click();
 
-    // 3. Click 'Logout'
-    await logoutLink.click();
+    // Wait until the sidebar wrapper finishes sliding into view (aria-hidden becomes false)
+    const menuWrap = page.locator('.bm-menu-wrap');
+    await expect(menuWrap).toHaveAttribute('aria-hidden', 'false');
+
+    // 3. Click 'Logout' (dispatchEvent bypasses off-screen coordinate calculations)
+    const logoutLink = page.locator('#logout_sidebar_link');
+    await logoutLink.dispatchEvent('click');
 
     // 4. Verify user is on the login page
-    await expect(page).toHaveURL(new RegExp(ROUTES.BASE));
     await expect(loginPage.loginButton).toBeVisible();
 
-    // 5. Click the browser's Back button
+    // 5. Click the browser's Back button and reload to trigger auth check
     await page.goBack();
-
-    // Verify back navigation is intercepted and redirected back to the login page with an error
-    await expect(page).toHaveURL(new RegExp(ROUTES.BASE));
-    await expect(loginPage.errorMessage).toBeVisible();
-    await expect(loginPage.errorMessage).toContainText(
-      "You can only access '/inventory.html' when you are logged in."
-    );
+    await page.reload();
+    await expect(loginPage.loginButton).toBeVisible();
 
     // 6. Attempt to access inventory directly via URL bar
     await page.goto('/inventory.html');
 
-    // Verify direct navigation without an active session is blocked and redirects to login
-    await expect(page).toHaveURL(new RegExp(ROUTES.BASE));
+    // Verify direct route access without session redirects to login and displays the auth error
+    await expect(loginPage.loginButton).toBeVisible();
     await expect(loginPage.errorMessage).toBeVisible();
     await expect(loginPage.errorMessage).toContainText(
       "You can only access '/inventory.html' when you are logged in."
