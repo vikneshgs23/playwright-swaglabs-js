@@ -7,6 +7,8 @@ import { CheckoutStepTwoPage } from '../pages/CheckoutStepTwoPage.js';
 import { ROUTES, HEADERS, ERROR_MESSAGES } from '../utils/index.js';
 import testData from '../test-data/users.json' with { type: 'json' };
 
+test.describe.configure({ mode: 'parallel' });
+
 test.describe('Swag Labs - End-to-End User Journeys', () => {
   let loginPage;
   let inventoryPage;
