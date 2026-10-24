@@ -1,15 +1,33 @@
 {
-  "name": "playwright-swaglabs",
+  "name": "playwright-swaglabs-js",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {"test": "npx playwright test",
-  "test:chromium": "npx playwright test --project=chromium",
-  "report": "npx playwright show-report"},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "description": "Enterprise-grade Playwright E2E and functional test automation framework for SauceDemo using JavaScript and Page Object Model.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:e2e": "playwright test tests/e2e.spec.js",
+    "test:e2e:chromium": "playwright test tests/e2e.spec.js --project=chromium",
+    "test:functional": "playwright test --ignore-snapshots tests/e2e.spec.js",
+    "report": "playwright show-report"
+  },
+  "keywords": [
+    "playwright",
+    "automation",
+    "testing",
+    "qa",
+    "sdet",
+    "saucedemo",
+    "page-object-model",
+    "javascript"
+  ],
+  "author": "G S Viknesh",
+  "license": "MIT",
   "devDependencies": {
     "@playwright/test": "^1.64.0",
     "@types/node": "^26.6.5"
