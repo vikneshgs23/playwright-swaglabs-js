@@ -7,13 +7,12 @@ export class CartPage {
   constructor(page) {
     this.page = page;
 
-    // Header & Content locators
-    this.title = page.locator('.title');
+    // Header & Layout locators
+    this.title = page.locator('[data-test="title"]');
     this.cartList = page.locator('.cart_list');
     this.cartItems = page.locator('.cart_item');
-    this.itemNames = page.locator('.inventory_item_name');
-    this.itemPrices = page.locator('.inventory_item_price');
-    this.itemQuantities = page.locator('.cart_quantity');
+    this.cartQuantityLabels = page.locator('.cart_quantity_label');
+    this.cartDescLabels = page.locator('.cart_desc_label');
 
     // Navigation & Action buttons
     this.continueShoppingButton = page.locator('[data-test="continue-shopping"]');
@@ -32,24 +31,44 @@ export class CartPage {
    * @param {string} itemName
    */
   getCartItemByName(itemName) {
-    return this.cartItems.filter({ hasText: itemName });
+    return this.cartItems.filter({
+      has: this.page.locator('.inventory_item_name', { hasText: itemName }),
+    });
   }
 
   /**
-   * Removes a specific product from the cart
+   * Gets specific product details (price, description, quantity) for a given item row
+   * @param {string} itemName
+   */
+  async getItemDetails(itemName) {
+    const itemRow = this.getCartItemByName(itemName);
+    const price = await itemRow.locator('.inventory_item_price').textContent();
+    const desc = await itemRow.locator('.inventory_item_desc').textContent();
+    const quantity = await itemRow.locator('.cart_quantity').textContent();
+
+    return {
+      name: itemName,
+      price: price?.trim(),
+      desc: desc?.trim(),
+      quantity: quantity?.trim(),
+    };
+  }
+
+  /**
+   * Removes a specific product from the cart by clicking its Remove button
    * @param {string} itemName
    */
   async removeItemByName(itemName) {
     const itemRow = this.getCartItemByName(itemName);
-    await itemRow.getByRole('button', { name: 'Remove' }).click();
+    await itemRow.locator('button:has-text("Remove")').click();
   }
 
   /**
-   * Returns a list of all item names currently in the cart
+   * Returns an array of all item names currently in the cart
    * @returns {Promise<string[]>}
    */
   async getAllCartItemNames() {
-    return await this.itemNames.allTextContents();
+    return await this.cartItems.locator('.inventory_item_name').allInnerTexts();
   }
 
   /**

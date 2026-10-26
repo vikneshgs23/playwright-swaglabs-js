@@ -18,6 +18,7 @@ export const ERROR_MESSAGES = {
 export const HEADERS = {
   PRODUCTS: 'Products',
   CART: 'Your Cart',
+  CHECKOUT_INFO: 'Checkout: Your Information',
   CHECKOUT_OVERVIEW: 'Checkout: Overview',
   COMPLETE: 'Thank you for your order!',
 };

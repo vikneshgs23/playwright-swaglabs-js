@@ -324,5 +324,29 @@ test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfi
       "You can only access '/inventory.html' when you are logged in."
     );
   });
+ test('TC_NEG_001 - Verify checkout behavior with an empty cart', async ({ page }) => {
+    // 1. Log in with valid credentials
+    await loginPage.login(
+      testData.validUser.username,
+      testData.validUser.password
+    );
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
 
+    // 2. Ensure the cart is empty (badge does not exist in DOM)
+    await expect(inventoryPage.shoppingCartBadge).toHaveCount(0);
+
+    // 3. Navigate to the Cart page
+    await inventoryPage.openCart();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
+    await expect(cartPage.title).toHaveText(HEADERS.CART);
+    await expect(cartPage.cartItems).toHaveCount(0);
+
+    // 4. Click 'Checkout'
+    await cartPage.proceedToCheckout();
+
+    // 5. Verify navigation to Step One
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+    await expect(stepOnePage.title).toHaveText('Checkout: Your Information');
+  });
 });
