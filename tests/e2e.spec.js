@@ -349,4 +349,27 @@ test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfi
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
     await expect(stepOnePage.title).toHaveText('Checkout: Your Information');
   });
+  test('TC_NEG_002 - Verify unauthenticated direct route access is blocked and redirects to login with error', async ({ page }) => {
+    // 1. Attempt direct navigation to inventory.html without an active session
+    await page.goto('/inventory.html');
+
+    // Verify redirected to login page with auth guard error message
+    await expect(page).toHaveURL(/.*saucedemo\.com\/?$/);
+    await expect(loginPage.loginButton).toBeVisible();
+    await expect(loginPage.errorMessage).toBeVisible();
+    await expect(loginPage.errorMessage).toContainText(
+      "You can only access '/inventory.html' when you are logged in."
+    );
+
+    // 2. Attempt direct navigation to checkout-step-one.html without an active session
+    await page.goto('/checkout-step-one.html');
+
+    // Verify redirected to login page with auth guard error message
+    await expect(page).toHaveURL(/.*saucedemo\.com\/?$/);
+    await expect(loginPage.loginButton).toBeVisible();
+    await expect(loginPage.errorMessage).toBeVisible();
+    await expect(loginPage.errorMessage).toContainText(
+      "You can only access '/checkout-step-one.html' when you are logged in."
+    );
+  });
 });
