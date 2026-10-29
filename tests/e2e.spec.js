@@ -372,4 +372,44 @@ test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfi
       "You can only access '/checkout-step-one.html' when you are logged in."
     );
   });
+  test('TC_NEG_003 - Verify checkout form behavior with boundary, special characters, and alphanumeric inputs', async ({ page }) => {
+    const item = 'Sauce Labs Backpack';
+    const longFirstName = 'A'.repeat(260); // 250+ character boundary string
+    const specialCharsLastName = '!@#$%^&*()_+{}:"<>?~`-=[]\\;\',./';
+    const alphanumericPostalCode = 'SW1A 1AA 90210-AB12';
+
+    // 1. Log in and add an item to the cart
+    await loginPage.login(
+      testData.validUser.username,
+      testData.validUser.password
+    );
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await inventoryPage.addItemToCart(item);
+    await expect(inventoryPage.shoppingCartBadge).toHaveText('1');
+
+    // 2. Navigate to Checkout Step One
+    await inventoryPage.openCart();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
+    await cartPage.proceedToCheckout();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+
+    // 3. Input boundary/fuzz data into all customer fields
+    await stepOnePage.firstNameInput.fill(longFirstName);
+    await stepOnePage.lastNameInput.fill(specialCharsLastName);
+    await stepOnePage.postalCodeInput.fill(alphanumericPostalCode);
+
+    // Verify fields accepted the values without truncating or crashing the UI
+    await expect(stepOnePage.firstNameInput).toHaveValue(longFirstName);
+    await expect(stepOnePage.lastNameInput).toHaveValue(specialCharsLastName);
+    await expect(stepOnePage.postalCodeInput).toHaveValue(alphanumericPostalCode);
+
+    // 4. Click 'Continue'
+    await stepOnePage.continueButton.click();
+
+    // Application Behavior Check:
+    // SauceDemo lacks input sanitization and length limits on these fields,
+    // so it accepts the inputs and routes directly to Step Two (Overview).
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_TWO));
+    await expect(stepTwoPage.title).toHaveText('Checkout: Overview');
+  });
 });
