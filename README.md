@@ -1,147 +1,131 @@
 # Swag Labs E2E Test Automation Framework
 
 [![Playwright Tests](https://github.com/vikneshgs23/playwright-swaglabs-js/actions/workflows/playwright.yml/badge.svg)](https://github.com/vikneshgs23/playwright-swaglabs-js/actions/workflows/playwright.yml)
-[![Playwright](https://img.shields.io/badge/Playwright-v1.64+-2EAD33?style=flat&logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=flat&logo=playwright&logoColor=white)](https://playwright.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
 
-An enterprise-grade, scalable End-to-End (E2E) UI test automation framework designed for [SauceDemo (Swag Labs)](https://www.saucedemo.com/) using **JavaScript (ES Modules)** and the **Playwright Test Runner**.
+An end-to-end UI test automation framework for [SauceDemo (Swag Labs)](https://www.saucedemo.com/), built with **JavaScript (ES Modules)** and the **Playwright Test Runner**.
 
-Engineered adhering to Page Object Model (POM) design principles, fully automated CI pipeline integration via GitHub Actions, multi-browser parallel execution, and resilient auto-waiting mechanisms to eliminate test flakiness.
-
----
-
-## 🛠️ Tech Stack & Architecture
-
-- **Language:** JavaScript (Node.js ES Modules)
-- **Test Runner & Engine:** [@playwright/test](https://playwright.dev/)
-- **Design Pattern:** Page Object Model (POM) with decoupled locators, actions, and assertions
-- **Continuous Integration:** GitHub Actions (`ubuntu-latest`, automated runner provisioning, multi-browser execution matrix)
-- **Reporting & Observability:** Playwright List Reporter, HTML Report, Tracing (`on-first-retry`), and failure screenshots
+It follows the Page Object Model (POM) pattern, runs tests in parallel across Chromium, Firefox and WebKit, and executes automatically on every push and pull request through GitHub Actions.
 
 ---
 
-## 📁 Project Structure
+## Tech Stack
+
+- **Language:** JavaScript (Node.js, ES Modules)
+- **Test runner:** [@playwright/test](https://playwright.dev/)
+- **Design pattern:** Page Object Model, with locators and actions kept in page classes and assertions in the specs
+- **CI:** GitHub Actions on `ubuntu-latest`, with npm and Playwright browser caching
+- **Reporting:** Playwright HTML report, traces on first retry, and screenshots on failure
+
+---
+
+## Project Structure
 
 ```text
 playwright-swaglabs-js/
 ├── .github/
 │   └── workflows/
-│       └── playwright.yml            # Automated CI execution & artifact upload
-├── pages/                            # Page Object Model component abstractions
-│   ├── BasePage.js                   # Common navigations, waits, and shared locators
-│   ├── LoginPage.js                  # Authentication inputs, triggers, and error messages
-│   ├── InventoryPage.js              # Product catalog, sorting filters, badge, and menu
-│   ├── CartPage.js                   # Cart listing, item removal, and navigation hooks
-│   ├── CheckoutStepOnePage.js        # Shipping info form, validations, and cancel actions
-│   └── CheckoutStepTwoPage.js        # Order summary, pricing calculations, and completion
-├── tests/                            # Test specifications categorized by domain
-│   ├── e2e.spec.js                   # Complete multi-step end-to-end user journeys
-│   ├── login.spec.js                 # Authentication positive and boundary checks
-│   ├── inventory.spec.js             # Sorting algorithms and catalog inventory checks
-│   ├── cart.spec.js                  # Cart manipulation, additions, and deletions
-│   └── checkout.spec.js              # Multi-tier checkout form flows and tax calculations
-├── test-data/                        # Data-driven test assets & JSON payloads
-│   └── users.json                    # User credentials and test fixtures
-├── utils/                            # Reusable constants, routes, and assertions
-│   ├── constants.js                  # Routes, expected headers, and strict error texts
-│   └── index.js                      # Barrel export module
-├── playwright.config.js              # Global runner settings, browsers, retries, and workers
-├── package.json                      # Module metadata and execution script hooks
+│       └── playwright.yml            # CI: run tests and upload the report
+├── pages/                            # Page Objects
+│   ├── BasePage.js                   # Shared navigation, waits and locators
+│   ├── LoginPage.js                  # Login inputs, actions and error messages
+│   ├── InventoryPage.js              # Product list, sorting, cart badge and menu
+│   ├── CartPage.js                   # Cart items, removal and navigation
+│   ├── CheckoutStepOnePage.js        # Shipping form, validations and cancel
+│   └── CheckoutStepTwoPage.js        # Order summary, totals and completion
+├── tests/                            # Test specs by feature
+│   ├── e2e.spec.js                   # Multi-step end-to-end user journeys
+│   ├── login.spec.js                 # Login: positive, negative and boundary cases
+│   ├── inventory.spec.js             # Sorting and product catalog checks
+│   ├── cart.spec.js                  # Adding and removing cart items
+│   └── checkout.spec.js              # Checkout forms and price calculations
+├── test-data/
+│   └── users.json                    # Test users and credentials
+├── utils/
+│   ├── constants.js                  # Routes, expected headings and error texts
+│   └── index.js                      # Barrel export
+├── playwright.config.js              # Browsers, retries, workers and reporters
+├── package.json
 └── README.md
 ```
 
 ---
 
-## ✨ Key Framework Features
+## Key Features
 
-- **Decoupled Page Object Architecture:** Encapsulates DOM locators and page interactions within modular page classes, keeping test specs declarative and maintainable.
-- **Flakiness-Resistant Assertions:** Replaces instantaneous checks with Playwright's web-first assertions (`toHaveCount`, `toHaveText`, `toBeVisible`) ensuring resilient polling during asynchronous DOM hydration.
-- **Cross-Browser Engine Coverage:** Configured to run concurrently across:
-  - **Chromium** (Google Chrome / Edge core)
-  - **Mozilla Firefox** (Gecko)
-  - **WebKit** (Apple Safari)
-- **Defect Handling & Edge Cases:** Automated verification for real-world application flaws (e.g., `problem_user` broken asset links, disabled/failing inputs, unauthorized route redirection).
-- **Automated CI Reporting:** Generates self-contained HTML reports and uploads them as build artifacts on every push or pull request to GitHub.
+- **Page Object Model:** DOM locators and page actions live in page classes, so specs stay short and readable.
+- **Web-first assertions:** Uses Playwright's auto-retrying assertions (`toHaveCount`, `toHaveText`, `toBeVisible`) instead of fixed waits, which reduces flaky tests.
+- **Cross-browser runs:** Tests run on Chromium, Firefox and WebKit, set up as Playwright projects.
+- **Parallel execution:** Tests run in parallel across workers.
+- **Negative and security checks:** Covers invalid input, direct URL access without logging in, and session ending after logout.
+- **Known-defect handling:** Includes checks for the `problem_user` account's broken product images and unfillable fields.
+- **CI reporting:** The HTML report is uploaded as a build artifact on every run.
 
 ---
 
-## 🧪 Test Coverage Matrix
+## Test Coverage
 
-The suite covers atomic functional specifications and multi-step E2E customer journeys:
-
-| Scenario ID | Test Name | Key Validations |
+| Scenario ID | Test | What it validates |
 | :--- | :--- | :--- |
-| **`TC_E2E_001`** | Multi-Item Purchase Flow | Complete checkout lifecycle from cart to confirmation with tax/subtotal calculation checks. |
-| **`TC_E2E_002`** | Cart State Synchronization | Multi-item addition, item removal in cart, badge count updates, and catalog state persistence. |
-| **`TC_E2E_003`** | Catalog Sorting Engine | Price (Low to High, High to Low) and Name (Z to A) sorting algorithms verified against sorted arrays. |
-| **`TC_E2E_004`** | Form Field Validations | Checkout Step One mandatory field assertions (First Name, Last Name, Postal Code). |
-| **`TC_E2E_005`** | Cancellation Workflows | Cart state integrity verified when aborting checkout at Step One and Step Two. |
-| **`TC_E2E_006`** | Known Defect Verification | Handles `problem_user` broken asset images (`sl-404`) and unfillable input attributes. |
-| **`TC_E2E_007`** | Session Security & Navigation Guard | Verifies clean logout, back-forward cache invalidation, and direct `/inventory.html` URL access blocks. |
+| `TC_E2E_001` | Multi-item purchase flow | Full checkout from cart to confirmation, including subtotal and tax. |
+| `TC_E2E_002` | Cart state sync | Adding and removing items, badge count updates and catalog state. |
+| `TC_E2E_003` | Product sorting | Price (low to high, high to low) and name (Z to A) checked against sorted data. |
+| `TC_E2E_004` | Checkout form validation | Required First Name, Last Name and Postal Code errors in Step One. |
+| `TC_E2E_005` | Checkout cancellation | Cart stays intact when cancelling at Step One and Step Two. |
+| `TC_E2E_006` | Known defect verification | `problem_user` broken images (`sl-404`) and unfillable inputs. |
+| `TC_E2E_007` | Session and route protection | Clean logout, back-button behavior and blocked direct `/inventory.html` access. |
+| `TC_NEG_001` | Checkout with an empty cart | How checkout behaves when no items are in the cart. |
+| `TC_NEG_002` | Unauthenticated route access | Direct access to protected routes is blocked and redirects to the login page. |
+| `TC_NEG_003` | Checkout form boundary inputs | Checkout form behavior with boundary values, special characters and alphanumeric input. |
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- **Node.js:** `v18.0.0` or higher ([Download Node.js](https://nodejs.org/))
-- **Git:** Version control installed
+- **Node.js** 18 or higher (CI runs on Node 22)
+- **Git**
 
 ### Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/vikneshgs23/playwright-swaglabs-js.git
-   cd playwright-swaglabs-js
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Install Playwright browser binaries with system dependencies:**
-   ```bash
-   npx playwright install --with-deps
-   ```
+```bash
+git clone https://github.com/vikneshgs23/playwright-swaglabs-js.git
+cd playwright-swaglabs-js
+npm install
+npx playwright install --with-deps
+```
 
 ---
 
-## ⚙️ Running Tests
+## Running Tests
 
 | Command | Action |
 | :--- | :--- |
-| `npm test` | Runs the full test suite headlessly across all three configured browser engines. |
-| `npm run test:e2e` | Executes only the End-to-End user journeys (`tests/e2e.spec.js`). |
-| `npm run test:chromium` | Executes tests exclusively against Chromium. |
-| `npm run test:firefox` | Executes tests exclusively against Mozilla Firefox. |
-| `npm run test:webkit` | Executes tests exclusively against WebKit (Safari). |
-| `npm run test:headed` | Runs tests in headed mode with visible browser windows. |
-| `npm run test:ui` | Opens Playwright's interactive UI mode (debugger, DOM trees, time travel). |
-| `npm run report` | Serves the generated Playwright HTML test report locally. |
+| `npm test` | Run the full suite headlessly on all configured browsers. |
+| `npm run test:e2e` | Run only the end-to-end journeys (`tests/e2e.spec.js`). |
+| `npm run test:chromium` | Run on Chromium only. |
+| `npm run test:firefox` | Run on Firefox only. |
+| `npm run test:webkit` | Run on WebKit only. |
+| `npm run test:headed` | Run with visible browser windows. |
+| `npm run test:ui` | Open Playwright's interactive UI mode. |
+| `npm run report` | Open the last HTML report locally. |
 
 ---
 
-## 📊 Continuous Integration (CI)
+## Continuous Integration
 
-The GitHub Actions workflow (`.github/workflows/playwright.yml`) triggers automatically on:
-- Every `push` to `main`
-- Every `pull_request` targeting `main`
+The workflow in `.github/workflows/playwright.yml` runs on every push and pull request to `main` or `master`. Changes that only touch Markdown files skip the run.
 
-### CI Runner Configuration:
-- **Environment:** `ubuntu-latest` (2-core vCPU)
-- **Parallelism:** 2 concurrent worker threads
-- **Retries:** Configured to retry failing tests once in CI with automatic tracing capture (`video: 'on-first-retry'`, `trace: 'on-first-retry'`).
-- **Artifacts:** Full HTML test reports and trace files are automatically attached to the action run and retained for 14 days.
+- **Runner:** `ubuntu-latest`, Node 22
+- **Caching:** npm packages and Playwright browsers are cached between runs
+- **Parallelism:** 2 workers on CI
+- **Retries:** failing tests retry once on CI, with a trace captured on the first retry
+- **Artifacts:** the HTML report is uploaded on every run (even on failure) and kept for 30 days
 
 ---
 
-## 👤 Author
+## Author
 
-- **G S Viknesh** - [GitHub Profile](https://github.com/vikneshgs23)
-
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE).
+**G S Viknesh** - [GitHub](https://github.com/vikneshgs23)
