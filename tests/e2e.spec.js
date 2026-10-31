@@ -412,4 +412,50 @@ test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfi
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_TWO));
     await expect(stepTwoPage.title).toHaveText('Checkout: Overview');
   });
+  test('TC_NEG_004 - Verify checkout form handles XSS and script injection payloads safely without execution', async ({ page }) => {
+    const item = 'Sauce Labs Backpack';
+    const scriptPayload = '<script>alert("xss")</script>';
+    const imgPayload = '<img src=x onerror=alert(1)>';
+
+    // Track unexpected dialog popups (to fail test immediately if script executes)
+    let dialogTriggered = false;
+    page.on('dialog', async (dialog) => {
+      dialogTriggered = true;
+      await dialog.dismiss();
+    });
+
+    // 1. Log in and add an item to the cart
+    await loginPage.login(
+      testData.validUser.username,
+      testData.validUser.password
+    );
+    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
+    await inventoryPage.addItemToCart(item);
+    await expect(inventoryPage.shoppingCartBadge).toHaveText('1');
+
+    // 2. Navigate to Checkout Step One
+    await inventoryPage.openCart();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
+    await cartPage.proceedToCheckout();
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+
+    // 3. Input script payloads into First Name and Postal Code
+    await stepOnePage.firstNameInput.fill(scriptPayload);
+    await stepOnePage.lastNameInput.fill(testData.customer.lastName);
+    await stepOnePage.postalCodeInput.fill(imgPayload);
+
+    // Verify fields retain inputs as literal text
+    await expect(stepOnePage.firstNameInput).toHaveValue(scriptPayload);
+    await expect(stepOnePage.postalCodeInput).toHaveValue(imgPayload);
+
+    // 4. Click 'Continue'
+    await stepOnePage.continueButton.click();
+
+    // Verify navigation proceeds to Step Two without unhandled script execution
+    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_TWO));
+    await expect(stepTwoPage.title).toHaveText('Checkout: Overview');
+
+    // Confirm no alert/confirm/prompt was triggered by the injection
+    expect(dialogTriggered).toBe(false);
+  });
 });
