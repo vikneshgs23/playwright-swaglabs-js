@@ -114,16 +114,12 @@ npx playwright install --with-deps
 
 ---
 
-## Continuous Integration
-
-The workflow in `.github/workflows/playwright.yml` runs on every push and pull request to `main` or `master`. Changes that only touch Markdown files skip the run.
-
-- **Runner:** `ubuntu-latest`, Node 22
-- **Caching:** npm packages and Playwright browsers are cached between runs
-- **Parallelism:** 2 workers on CI
-- **Retries:** failing tests retry once on CI, with a trace captured on the first retry
-- **Artifacts:** the HTML report is uploaded on every run (even on failure) and kept for 30 days
-
+### CI Configuration
+- **Environment:** `ubuntu-latest`, Node.js 22
+- **Triggers:** push and pull requests to `main`/`master` (README-only changes skipped)
+- **Parallelism:** 2 parallel workers in CI, with tests in each file also run in parallel
+- **Retries:** failing tests retry once in CI; trace and video are captured on the first retry, screenshots on failure
+- **Artifacts:** the HTML report (including traces, screenshots and video) is uploaded on every run, even failed ones, and retained for 30 days
 ---
 
 ## Author
