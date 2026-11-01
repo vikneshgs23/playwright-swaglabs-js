@@ -17,6 +17,7 @@ It follows the Page Object Model (POM) pattern, runs tests in parallel across Ch
 - **Design pattern:** Page Object Model, with locators and actions kept in page classes and assertions in the specs
 - **CI:** GitHub Actions on `ubuntu-latest`, with npm and Playwright browser caching
 - **Reporting:** Playwright HTML report, traces on first retry, and screenshots on failure
+- [![Live Report](https://img.shields.io/badge/Test%20Report-Live-blue)](https://vikneshgs23.github.io/playwright-swaglabs-js/)
 
 ---
 
