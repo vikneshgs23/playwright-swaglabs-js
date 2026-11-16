@@ -11,10 +11,13 @@
     "test:chromium": "playwright test --project=chromium",
     "test:firefox": "playwright test --project=firefox",
     "test:webkit": "playwright test --project=webkit",
+    "test:smoke": "playwright test --grep @smoke",
     "test:e2e": "playwright test tests/e2e.spec.js",
     "test:e2e:chromium": "playwright test tests/e2e.spec.js --project=chromium",
     "test:functional": "playwright test --ignore-snapshots tests/e2e.spec.js",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "lint": "eslint tests fixtures",
+    "format": "prettier --write ."
   },
   "keywords": [
     "playwright",
@@ -30,6 +33,9 @@
   "license": "MIT",
   "devDependencies": {
     "@playwright/test": "^1.64.0",
-    "@types/node": "^26.6.5"
+    "@types/node": "^26.6.5",
+    "eslint": "^10.15.0",
+    "eslint-plugin-playwright": "^2.12.2",
+    "prettier": "^3.10.1"
   }
 }
