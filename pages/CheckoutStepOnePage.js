@@ -8,7 +8,7 @@ export class CheckoutStepOnePage {
     this.page = page;
 
     // Header & Input fields
-    this.title = page.locator('.title');
+    this.title = page.locator('[data-test="title"]');
     this.firstNameInput = page.locator('[data-test="firstName"]');
     this.lastNameInput = page.locator('[data-test="lastName"]');
     this.postalCodeInput = page.locator('[data-test="postalCode"]');

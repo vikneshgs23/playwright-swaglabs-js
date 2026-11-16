@@ -8,7 +8,7 @@ export class CheckoutStepTwoPage {
     this.page = page;
 
     // Header & Summary info
-    this.title = page.locator('.title');
+    this.title = page.locator('[data-test="title"]');
     this.cartItems = page.locator('.cart_item');
     this.paymentInfoLabel = page.locator('[data-test="payment-info-value"]');
     this.shippingInfoLabel = page.locator('[data-test="shipping-info-value"]');

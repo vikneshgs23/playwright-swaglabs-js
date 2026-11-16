@@ -1,15 +1,6 @@
 {
-  "validUser": {
-    "username": "standard_user",
-    "password": "secret_sauce"
-  },
-  "lockedUser": {
-    "username": "locked_out_user",
-    "password": "secret_sauce"
-  },
-  "customer": {
-    "firstName": "John",
-    "lastName": "Doe",
-    "postalCode": "600001"
-  }
+  "validUser": { "username": "standard_user", "password": "secret_sauce" },
+  "lockedUser": { "username": "locked_out_user", "password": "secret_sauce" },
+  "problemUser": { "username": "problem_user", "password": "secret_sauce" },
+  "customer": { "firstName": "John", "lastName": "Doe", "postalCode": "600001" }
 }

@@ -7,14 +7,14 @@ export class CartPage {
   constructor(page) {
     this.page = page;
 
-    // Header & Layout locators
+    // Header & layout locators
     this.title = page.locator('[data-test="title"]');
     this.cartList = page.locator('.cart_list');
     this.cartItems = page.locator('.cart_item');
     this.cartQuantityLabels = page.locator('.cart_quantity_label');
     this.cartDescLabels = page.locator('.cart_desc_label');
 
-    // Navigation & Action buttons
+    // Navigation & action buttons
     this.continueShoppingButton = page.locator('[data-test="continue-shopping"]');
     this.checkoutButton = page.locator('[data-test="checkout"]');
   }
@@ -27,17 +27,17 @@ export class CartPage {
   }
 
   /**
-   * Returns the row locator for a specific item inside the cart
+   * Returns the row locator for the cart item whose name exactly matches itemName
    * @param {string} itemName
    */
   getCartItemByName(itemName) {
     return this.cartItems.filter({
-      has: this.page.locator('.inventory_item_name', { hasText: itemName }),
+      has: this.page.getByText(itemName, { exact: true }),
     });
   }
 
   /**
-   * Gets specific product details (price, description, quantity) for a given item row
+   * Gets product details (price, description, quantity) for a given item row
    * @param {string} itemName
    */
   async getItemDetails(itemName) {
@@ -60,7 +60,7 @@ export class CartPage {
    */
   async removeItemByName(itemName) {
     const itemRow = this.getCartItemByName(itemName);
-    await itemRow.locator('button:has-text("Remove")').click();
+    await itemRow.getByRole('button', { name: 'Remove' }).click();
   }
 
   /**
@@ -72,7 +72,9 @@ export class CartPage {
   }
 
   /**
-   * Returns the count of unique item rows present in the cart
+   * Returns the count of item rows in the cart at this moment.
+   * Prefer `await expect(cartPage.cartItems).toHaveCount(n)` in specs, because
+   * this method does not retry.
    * @returns {Promise<number>}
    */
   async getCartItemCount() {
@@ -80,14 +82,14 @@ export class CartPage {
   }
 
   /**
-   * Clicks the Continue Shopping button to return to the inventory grid
+   * Clicks Continue Shopping to return to the inventory grid
    */
   async continueShopping() {
     await this.continueShoppingButton.click();
   }
 
   /**
-   * Clicks the Checkout button to proceed to step one of checkout
+   * Clicks Checkout to proceed to step one of checkout
    */
   async proceedToCheckout() {
     await this.checkoutButton.click();

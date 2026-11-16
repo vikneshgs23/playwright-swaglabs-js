@@ -1,3 +1,5 @@
+import { ROUTES } from '../utils/index.js';
+
 export class LoginPage {
   /**
    * @param {import('@playwright/test').Page} page
@@ -13,10 +15,10 @@ export class LoginPage {
   }
 
   /**
-   * Navigates to base URL configured in playwright.config.js
+   * Navigates to the login page (base URL is set in playwright.config.js)
    */
   async navigate() {
-    await this.page.goto('/');
+    await this.page.goto(ROUTES.HOME);
   }
 
   /**
