@@ -32,7 +32,7 @@
   "author": "G S Viknesh",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.64.0",
+    "@playwright/test": "^1.65.0",
     "@types/node": "^26.6.6",
     "eslint": "^10.15.0",
     "eslint-plugin-playwright": "^2.12.2",
