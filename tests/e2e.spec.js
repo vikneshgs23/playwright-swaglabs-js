@@ -1,461 +1,377 @@
-import { test, expect } from '@playwright/test';
-import { LoginPage } from '../pages/LoginPage.js';
-import { InventoryPage } from '../pages/InventoryPage.js';
-import { CartPage } from '../pages/CartPage.js';
-import { CheckoutStepOnePage } from '../pages/CheckoutStepOnePage.js';
-import { CheckoutStepTwoPage } from '../pages/CheckoutStepTwoPage.js';
-import { ROUTES, HEADERS, ERROR_MESSAGES } from '../utils/index.js';
+import { test, expect } from '../fixtures/index.js';
+import {
+  ROUTES,
+  HEADERS,
+  ERROR_MESSAGES,
+  PRODUCTS,
+  TWO_ITEM_ORDER,
+  parsePrice,
+  attachScreenshot,
+} from '../utils/index.js';
 import testData from '../test-data/users.json' with { type: 'json' };
 
-
-test.describe.configure({ mode: 'parallel' });
-
 test.describe('Swag Labs - End-to-End User Journeys', () => {
-  let loginPage;
-  let inventoryPage;
-  let cartPage;
-  let stepOnePage;
-  let stepTwoPage;
+  test(
+    'TC_E2E_001 - Multi-item purchase flow',
+    { tag: '@smoke' },
+    async ({ page, loggedIn, inventoryPage, cartPage, stepOnePage, stepTwoPage }) => {
+      // Add two items and check the cart badge
+      await inventoryPage.addItemToCart(PRODUCTS.BACKPACK);
+      await inventoryPage.addItemToCart(PRODUCTS.BIKE_LIGHT);
+      await expect(inventoryPage.shoppingCartBadge).toHaveText('2');
 
-  test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page);
-    inventoryPage = new InventoryPage(page);
-    cartPage = new CartPage(page);
-    stepOnePage = new CheckoutStepOnePage(page);
-    stepTwoPage = new CheckoutStepTwoPage(page);
+      // Open the cart and verify both items
+      await inventoryPage.openCart();
+      await expect(page).toHaveURL(new RegExp(ROUTES.CART));
+      await expect(cartPage.cartItems).toHaveCount(2);
+      await expect(cartPage.getCartItemByName(PRODUCTS.BACKPACK)).toBeVisible();
+      await expect(cartPage.getCartItemByName(PRODUCTS.BIKE_LIGHT)).toBeVisible();
+      await cartPage.proceedToCheckout();
 
-    await loginPage.navigate();
-  });
+      // Customer information
+      await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+      await stepOnePage.fillCustomerInformation(
+        testData.customer.firstName,
+        testData.customer.lastName,
+        testData.customer.postalCode
+      );
 
-  test('TC_E2E_001 - Verify end-to-end multi-item purchase flow', async ({ page }) => {
-    const item1 = 'Sauce Labs Backpack';
-    const item2 = 'Sauce Labs Bike Light';
+      // Overview: item total, tax and total
+      await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_TWO));
+      await expect(stepTwoPage.title).toHaveText(HEADERS.CHECKOUT_OVERVIEW);
+      await expect(stepTwoPage.itemSubtotal).toContainText(TWO_ITEM_ORDER.SUBTOTAL);
+      await expect(stepTwoPage.taxLabel).toContainText(TWO_ITEM_ORDER.TAX);
+      await expect(stepTwoPage.totalLabel).toContainText(TWO_ITEM_ORDER.TOTAL);
 
-    // 1. Log in with valid credentials
-    await loginPage.login(
-      testData.validUser.username,
-      testData.validUser.password
-    );
-    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
-    await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
+      // Finish
+      await stepTwoPage.finishOrder();
+      await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_COMPLETE));
+      await expect(stepTwoPage.completeHeader).toHaveText(HEADERS.COMPLETE);
+      await attachScreenshot(page, 'Order confirmation');
+    }
+  );
 
-    // 2. Add 'Sauce Labs Backpack' and 'Sauce Labs Bike Light' to cart
-    await inventoryPage.addItemToCart(item1);
-    await inventoryPage.addItemToCart(item2);
-    await expect(inventoryPage.shoppingCartBadge).toHaveText('2');
-
-    // 3. Click the shopping cart icon
-    await inventoryPage.openCart();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
-
-    // 4. Verify selected items are listed, then click 'Checkout'
-    await expect(cartPage.cartItems).toHaveCount(2);
-    await expect(cartPage.getCartItemByName(item1)).toBeVisible();
-    await expect(cartPage.getCartItemByName(item2)).toBeVisible();
-    await cartPage.proceedToCheckout();
-
-    // 5. Enter First Name, Last Name, and Postal Code
-    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
-    await stepOnePage.fillCustomerInformation(
-      testData.customer.firstName,
-      testData.customer.lastName,
-      testData.customer.postalCode
-    );
-
-    // 6. Click 'Continue' (verified by arriving at step two overview)
-    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_TWO));
-    await expect(stepTwoPage.title).toHaveText(HEADERS.CHECKOUT_OVERVIEW);
-
-    // 7. Verify item total, tax, and total amount on 'Checkout: Overview'
-    await expect(stepTwoPage.itemSubtotal).toContainText('Item total: $39.98');
-    await expect(stepTwoPage.taxLabel).toContainText('Tax: $3.20');
-    await expect(stepTwoPage.totalLabel).toContainText('Total: $43.18');
-
-    // 8. Click 'Finish'
-    await stepTwoPage.finishOrder();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_COMPLETE));
-    await expect(stepTwoPage.completeHeader).toHaveText(HEADERS.COMPLETE);
-  });
-  test('TC_E2E_002 - Add three items, remove one, and verify state across Cart and Inventory', async ({ page }) => {
-    const item1 = 'Sauce Labs Backpack';
-    const item2 = 'Sauce Labs Bike Light';
-    const item3 = 'Sauce Labs Bolt T-Shirt';
-
-    // 1. Log in with valid credentials
-    await loginPage.login(
-      testData.validUser.username,
-      testData.validUser.password
-    );
-    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
-    await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
-
-    // 2. Add three items to the cart from the inventory page
-    await inventoryPage.addItemToCart(item1);
-    await inventoryPage.addItemToCart(item2);
-    await inventoryPage.addItemToCart(item3);
-
-    // 3. Verify cart badge displays '3'
+  test('TC_E2E_002 - Add three items, remove one, and verify state across Cart and Inventory', async ({
+    page,
+    loggedIn,
+    inventoryPage,
+    cartPage,
+  }) => {
+    await inventoryPage.addItemToCart(PRODUCTS.BACKPACK);
+    await inventoryPage.addItemToCart(PRODUCTS.BIKE_LIGHT);
+    await inventoryPage.addItemToCart(PRODUCTS.BOLT_TSHIRT);
     await expect(inventoryPage.shoppingCartBadge).toHaveText('3');
 
-    // 4. Click the cart icon to view cart
     await inventoryPage.openCart();
     await expect(page).toHaveURL(new RegExp(ROUTES.CART));
 
-    // 5. Click 'Remove' on one item
-    await cartPage.removeItemByName(item1);
-
-    // 6. Verify cart badge updates to '2'
+    await cartPage.removeItemByName(PRODUCTS.BACKPACK);
     await expect(inventoryPage.shoppingCartBadge).toHaveText('2');
-    await expect(cartPage.getCartItemByName(item1)).toHaveCount(0);
+    await expect(cartPage.getCartItemByName(PRODUCTS.BACKPACK)).toHaveCount(0);
 
-    // 7. Click 'Continue Shopping'
     await cartPage.continueShopping();
     await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
 
-    // 8. Verify the removed item shows 'Add to cart' on the inventory page
-    const removedItemCard = inventoryPage.getItemCardByName(item1);
+    const removedItemCard = inventoryPage.getItemCardByName(PRODUCTS.BACKPACK);
     await expect(removedItemCard.getByRole('button', { name: 'Add to cart' })).toBeVisible();
   });
-  test('TC_E2E_003 - Verify product catalog sorting by price and name', async ({ page }) => {
-    // 1. Log in with valid credentials
-    await loginPage.login(
-      testData.validUser.username,
-      testData.validUser.password
-    );
-    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
-    await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
 
-    // 2. Select sort filter 'Price (low to high)' ('lohi')
-    await inventoryPage.selectSortOption('lohi');
+  // TC_E2E_003 - catalog sorting
+  const priceSortCases = [
+    { id: 'TC_E2E_003a', option: 'lohi', label: 'Price (low to high)', firstPrice: '$7.99' },
+    { id: 'TC_E2E_003b', option: 'hilo', label: 'Price (high to low)', firstPrice: '$49.99' },
+  ];
 
-    // 3. Verify inventory list sorts prices in ascending order
-    // Auto-waits for the first price to reflect the lowest catalog price ($7.99)
-    await expect(inventoryPage.itemPrices.first()).toHaveText('$7.99');
-    const rawPricesLowToHigh = await inventoryPage.itemPrices.allTextContents();
-    const numericPricesLowToHigh = rawPricesLowToHigh.map(price => parseFloat(price.replace('$', '')));
-    const expectedSortedLowToHigh = [...numericPricesLowToHigh].sort((a, b) => a - b);
-    expect(numericPricesLowToHigh).toEqual(expectedSortedLowToHigh);
+  for (const { id, option, label, firstPrice } of priceSortCases) {
+    test(`${id} - Sort by ${label}`, async ({ loggedIn, inventoryPage }) => {
+      await inventoryPage.selectSortOption(option);
 
-    // 4. Select sort filter 'Price (high to low)' ('hilo')
-    await inventoryPage.selectSortOption('hilo');
+      // Auto-waits until the list has re-sorted
+      await expect(inventoryPage.itemPrices.first()).toHaveText(firstPrice);
 
-    // 5. Verify inventory list sorts prices in descending order
-    // Auto-waits for the first price to reflect the highest catalog price ($49.99)
-    await expect(inventoryPage.itemPrices.first()).toHaveText('$49.99');
-    const rawPricesHighToLow = await inventoryPage.itemPrices.allTextContents();
-    const numericPricesHighToLow = rawPricesHighToLow.map(price => parseFloat(price.replace('$', '')));
-    const expectedSortedHighToLow = [...numericPricesHighToLow].sort((a, b) => b - a);
-    expect(numericPricesHighToLow).toEqual(expectedSortedHighToLow);
+      const prices = (await inventoryPage.itemPrices.allTextContents()).map(parsePrice);
+      const expected = [...prices].sort((a, b) => (option === 'lohi' ? a - b : b - a));
+      expect(prices).toEqual(expected);
+    });
+  }
 
-    // 6. Select sort filter 'Name (Z to A)' ('za')
+  test('TC_E2E_003c - Sort by Name (Z to A)', async ({ loggedIn, inventoryPage }) => {
     await inventoryPage.selectSortOption('za');
 
-    // 7. Verify product names sort alphabetically descending
-    // Auto-waits for the first product title to match the Z-A leader
     await expect(inventoryPage.itemNames.first()).toHaveText('Test.allTheThings() T-Shirt (Red)');
-    const rawNamesZtoA = await inventoryPage.getAllProductNames();
-    const expectedSortedZtoA = [...rawNamesZtoA].sort((a, b) => b.localeCompare(a));
-    expect(rawNamesZtoA).toEqual(expectedSortedZtoA);
+
+    const names = await inventoryPage.getAllProductNames();
+    expect(names).toEqual([...names].sort((a, b) => b.localeCompare(a)));
   });
-  test('TC_E2E_004 - Verify checkout step one mandatory field validations', async ({ page }) => {
-    const item = 'Sauce Labs Backpack';
 
-    // 1. Log in and add an item to the cart
-    await loginPage.login(
-      testData.validUser.username,
-      testData.validUser.password
-    );
-    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
-    await inventoryPage.addItemToCart(item);
+  // TC_E2E_004 - checkout step one mandatory field validations
+  const { firstName, lastName, postalCode } = testData.customer;
+  const requiredFieldCases = [
+    {
+      id: 'TC_E2E_004a',
+      field: 'First Name',
+      values: ['', lastName, postalCode],
+      error: ERROR_MESSAGES.REQUIRED_FIRST_NAME,
+    },
+    {
+      id: 'TC_E2E_004b',
+      field: 'Last Name',
+      values: [firstName, '', postalCode],
+      error: ERROR_MESSAGES.REQUIRED_LAST_NAME,
+    },
+    {
+      id: 'TC_E2E_004c',
+      field: 'Postal Code',
+      values: [firstName, lastName, ''],
+      error: ERROR_MESSAGES.REQUIRED_POSTAL_CODE,
+    },
+  ];
 
-    // 2. Navigate to cart and click 'Checkout'
+  for (const { id, field, values, error } of requiredFieldCases) {
+    test(`${id} - ${field} is required on checkout step one`, async ({
+      page,
+      loggedIn,
+      inventoryPage,
+      cartPage,
+      stepOnePage,
+    }) => {
+      await inventoryPage.addItemToCart(PRODUCTS.BACKPACK);
+      await inventoryPage.openCart();
+      await cartPage.proceedToCheckout();
+      await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+
+      await stepOnePage.fillCustomerInformation(...values);
+
+      await expect(stepOnePage.errorMessage).toBeVisible();
+      await expect(stepOnePage.errorMessage).toHaveText(error);
+    });
+  }
+
+  test('TC_E2E_005 - Cancellation flows at checkout step one and step two', async ({
+    page,
+    loggedIn,
+    inventoryPage,
+    cartPage,
+    stepOnePage,
+    stepTwoPage,
+  }) => {
+    await inventoryPage.addItemToCart(PRODUCTS.FLEECE_JACKET);
     await inventoryPage.openCart();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
     await cartPage.proceedToCheckout();
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
 
-    // 3. Leave First Name empty, fill other fields, click 'Continue'
-    await stepOnePage.fillCustomerInformation(
-      '',
-      testData.customer.lastName,
-      testData.customer.postalCode
-    );
-    await expect(stepOnePage.errorMessage).toBeVisible();
-    await expect(stepOnePage.errorMessage).toHaveText('Error: First Name is required');
-
-    // 4. Fill First Name, leave Last Name empty, click 'Continue'
-    await stepOnePage.fillCustomerInformation(
-      testData.customer.firstName,
-      '',
-      testData.customer.postalCode
-    );
-    await expect(stepOnePage.errorMessage).toBeVisible();
-    await expect(stepOnePage.errorMessage).toHaveText('Error: Last Name is required');
-
-    // 5. Fill Last Name, leave Postal Code empty, click 'Continue'
-    await stepOnePage.fillCustomerInformation(
-      testData.customer.firstName,
-      testData.customer.lastName,
-      ''
-    );
-    await expect(stepOnePage.errorMessage).toBeVisible();
-    await expect(stepOnePage.errorMessage).toHaveText(ERROR_MESSAGES.REQUIRED_POSTAL_CODE);
-  });
-  test('TC_E2E_005 - Verify cancellation flows at checkout step one and step two', async ({ page }) => {
-    const item = 'Sauce Labs Fleece Jacket';
-
-    // 1. Log in and add 'Sauce Labs Fleece Jacket' to the cart
-    await loginPage.login(
-      testData.validUser.username,
-      testData.validUser.password
-    );
-    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
-    await inventoryPage.addItemToCart(item);
-
-    // 2. Navigate to Cart and click 'Checkout'
-    await inventoryPage.openCart();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
-    await cartPage.proceedToCheckout();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
-
-    // 3. Click 'Cancel' on the 'Checkout: Your Information' page
+    // Cancel on step one returns to the cart with the item kept
     await stepOnePage.cancelCheckout();
-
-    // 4. Verify navigation returns to 'Your Cart' with the item preserved
     await expect(page).toHaveURL(new RegExp(ROUTES.CART));
     await expect(cartPage.title).toHaveText(HEADERS.CART);
     await expect(cartPage.cartItems).toHaveCount(1);
-    await expect(cartPage.getCartItemByName(item)).toBeVisible();
+    await expect(cartPage.getCartItemByName(PRODUCTS.FLEECE_JACKET)).toBeVisible();
 
-    // 5. Click 'Checkout', fill required details, and click 'Continue'
+    // Go forward again and cancel on the overview
     await cartPage.proceedToCheckout();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
     await stepOnePage.fillCustomerInformation(
       testData.customer.firstName,
       testData.customer.lastName,
       testData.customer.postalCode
     );
-
-    // 6. On 'Checkout: Overview', click 'Cancel'
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_TWO));
     await expect(stepTwoPage.title).toHaveText(HEADERS.CHECKOUT_OVERVIEW);
     await stepTwoPage.cancelOrder();
 
-    // Verify cancellation returns to the Products inventory page with cart item still preserved
     await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
     await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
     await expect(inventoryPage.shoppingCartBadge).toHaveText('1');
   });
-test('TC_E2E_006 - Verify known defects for problem_user (broken images and unfillable last name)', async ({ page }) => {
-    const item = 'Sauce Labs Backpack';
 
-    // 1. Log in with problem_user
-    await loginPage.login('problem_user', testData.validUser.password);
+  test('TC_E2E_006 - Known defects for problem_user (broken images and unfillable last name)', async ({
+    page,
+    loginPage,
+    inventoryPage,
+    cartPage,
+    stepOnePage,
+  }) => {
+    await loginPage.navigate();
+    await loginPage.login(testData.problemUser.username, testData.problemUser.password);
     await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
     await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
 
-    // 2. Inspect product image (assert first image renders broken sl-404 link)
-    const firstProductImg = page.locator('.inventory_item_img img').first();
-    await expect(firstProductImg).toBeVisible();
-    await expect(firstProductImg).toHaveAttribute('src', /sl-404/);
+    // Defect 1: product images point to the sl-404 fallback image
+    await expect(inventoryPage.firstProductImage).toBeVisible();
+    await expect(inventoryPage.firstProductImage).toHaveAttribute('src', /sl-404/);
 
-    // 3. Add 'Sauce Labs Backpack' to the cart
-    await inventoryPage.addItemToCart(item);
+    await inventoryPage.addItemToCart(PRODUCTS.BACKPACK);
     await expect(inventoryPage.shoppingCartBadge).toHaveText('1');
-
-    // 4. Navigate to checkout and attempt to fill 'Last Name'
     await inventoryPage.openCart();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
     await cartPage.proceedToCheckout();
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
 
+    // Defect 2: typing into Last Name does not populate the field
     await stepOnePage.firstNameInput.fill(testData.customer.firstName);
-
-    // problem_user defect: typing into the Last Name field does not populate it
     await stepOnePage.lastNameInput.pressSequentially('Doe', { delay: 10 });
+    await expect(stepOnePage.lastNameInput).toHaveValue('');
     await stepOnePage.postalCodeInput.fill(testData.customer.postalCode);
 
-    // 5. Click 'Continue' and verify validation blocks progress due to missing Last Name
+    // Validation blocks progress because Last Name is empty
     await stepOnePage.continueButton.click();
-    await expect(stepOnePage.errorMessage).toBeVisible();
-    await expect(stepOnePage.errorMessage).toHaveText('Error: Last Name is required');
+    await expect(stepOnePage.errorMessage).toHaveText(ERROR_MESSAGES.REQUIRED_LAST_NAME);
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
   });
- test('TC_E2E_007 - Verify session termination, browser back prevention, and direct route access block', async ({ page }) => {
-    const item1 = 'Sauce Labs Backpack';
-    const item2 = 'Sauce Labs Bike Light';
 
-    // 1. Log in, add two items to the cart
-    await loginPage.login(
-      testData.validUser.username,
-      testData.validUser.password
-    );
-    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
-    await inventoryPage.addItemToCart(item1);
-    await inventoryPage.addItemToCart(item2);
-    await expect(inventoryPage.shoppingCartBadge).toHaveText('2');
+  // TC_E2E_007 - logout and session protection
+  test(
+    'TC_E2E_007a - Logout returns the user to the login page',
+    { tag: '@smoke' },
+    async ({ loggedIn, inventoryPage, loginPage }) => {
+      await inventoryPage.logout();
 
-    // 2. Open the burger menu sidebar
-    await page.locator('#react-burger-menu-btn').click();
+      await expect(loginPage.loginButton).toBeVisible();
+    }
+  );
 
-    // Wait until the sidebar wrapper finishes sliding into view (aria-hidden becomes false)
-    const menuWrap = page.locator('.bm-menu-wrap');
-    await expect(menuWrap).toHaveAttribute('aria-hidden', 'false');
-
-    // 3. Click 'Logout' (dispatchEvent bypasses off-screen coordinate calculations)
-    const logoutLink = page.locator('#logout_sidebar_link');
-    await logoutLink.dispatchEvent('click');
-
-    // 4. Verify user is on the login page
+  test('TC_E2E_007b - Browser Back and reload after logout stay on the login page', async ({
+    page,
+    loggedIn,
+    inventoryPage,
+    loginPage,
+  }) => {
+    await inventoryPage.logout();
     await expect(loginPage.loginButton).toBeVisible();
 
-    // 5. Click the browser's Back button and reload to trigger auth check
     await page.goBack();
     await page.reload();
+
+    await expect(loginPage.loginButton).toBeVisible();
+  });
+
+  test('TC_E2E_007c - Direct inventory access after logout is blocked', async ({
+    page,
+    loggedIn,
+    inventoryPage,
+    loginPage,
+  }) => {
+    await inventoryPage.logout();
     await expect(loginPage.loginButton).toBeVisible();
 
-    // 6. Attempt to access inventory directly via URL bar
-    await page.goto('/inventory.html');
+    await page.goto(ROUTES.INVENTORY);
 
-    // Verify direct route access without session redirects to login and displays the auth error
     await expect(loginPage.loginButton).toBeVisible();
-    await expect(loginPage.errorMessage).toBeVisible();
     await expect(loginPage.errorMessage).toContainText(
-      "You can only access '/inventory.html' when you are logged in."
+      ERROR_MESSAGES.ACCESS_DENIED(ROUTES.INVENTORY)
     );
   });
- test('TC_NEG_001 - Verify checkout behavior with an empty cart', async ({ page }) => {
-    // 1. Log in with valid credentials
-    await loginPage.login(
-      testData.validUser.username,
-      testData.validUser.password
-    );
-    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
-    await expect(inventoryPage.title).toHaveText(HEADERS.PRODUCTS);
 
-    // 2. Ensure the cart is empty (badge does not exist in DOM)
-    await expect(inventoryPage.shoppingCartBadge).toHaveCount(0);
+  test(
+    'TC_NEG_001 - Checkout behaviour with an empty cart',
+    {
+      annotation: {
+        type: 'known-issue',
+        description: 'SauceDemo allows reaching checkout with an empty cart',
+      },
+    },
+    async ({ page, loggedIn, inventoryPage, cartPage, stepOnePage }) => {
+      await expect(inventoryPage.shoppingCartBadge).toHaveCount(0);
 
-    // 3. Navigate to the Cart page
-    await inventoryPage.openCart();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
-    await expect(cartPage.title).toHaveText(HEADERS.CART);
-    await expect(cartPage.cartItems).toHaveCount(0);
+      await inventoryPage.openCart();
+      await expect(page).toHaveURL(new RegExp(ROUTES.CART));
+      await expect(cartPage.title).toHaveText(HEADERS.CART);
+      await expect(cartPage.cartItems).toHaveCount(0);
 
-    // 4. Click 'Checkout'
-    await cartPage.proceedToCheckout();
+      await cartPage.proceedToCheckout();
 
-    // 5. Verify navigation to Step One
-    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
-    await expect(stepOnePage.title).toHaveText('Checkout: Your Information');
-  });
-  test('TC_NEG_002 - Verify unauthenticated direct route access is blocked and redirects to login with error', async ({ page }) => {
-    // 1. Attempt direct navigation to inventory.html without an active session
-    await page.goto('/inventory.html');
+      await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+      await expect(stepOnePage.title).toHaveText(HEADERS.CHECKOUT_INFO);
+    }
+  );
 
-    // Verify redirected to login page with auth guard error message
-    await expect(page).toHaveURL(/.*saucedemo\.com\/?$/);
-    await expect(loginPage.loginButton).toBeVisible();
-    await expect(loginPage.errorMessage).toBeVisible();
-    await expect(loginPage.errorMessage).toContainText(
-      "You can only access '/inventory.html' when you are logged in."
-    );
+  // TC_NEG_002 - unauthenticated direct route access
+  const protectedRoutes = [
+    { id: 'TC_NEG_002a', route: ROUTES.INVENTORY },
+    { id: 'TC_NEG_002b', route: ROUTES.CHECKOUT_STEP_ONE },
+  ];
 
-    // 2. Attempt direct navigation to checkout-step-one.html without an active session
-    await page.goto('/checkout-step-one.html');
+  for (const { id, route } of protectedRoutes) {
+    test(`${id} - Unauthenticated access to ${route} redirects to login with an error`, async ({
+      page,
+      loginPage,
+    }) => {
+      await page.goto(route);
 
-    // Verify redirected to login page with auth guard error message
-    await expect(page).toHaveURL(/.*saucedemo\.com\/?$/);
-    await expect(loginPage.loginButton).toBeVisible();
-    await expect(loginPage.errorMessage).toBeVisible();
-    await expect(loginPage.errorMessage).toContainText(
-      "You can only access '/checkout-step-one.html' when you are logged in."
-    );
-  });
-  test('TC_NEG_003 - Verify checkout form behavior with boundary, special characters, and alphanumeric inputs', async ({ page }) => {
-    const item = 'Sauce Labs Backpack';
-    const longFirstName = 'A'.repeat(260); // 250+ character boundary string
-    const specialCharsLastName = '!@#$%^&*()_+{}:"<>?~`-=[]\\;\',./';
-    const alphanumericPostalCode = 'SW1A 1AA 90210-AB12';
+      await expect(page).toHaveURL(/\/$/);
+      await expect(loginPage.loginButton).toBeVisible();
+      await expect(loginPage.errorMessage).toBeVisible();
+      await expect(loginPage.errorMessage).toContainText(ERROR_MESSAGES.ACCESS_DENIED(route));
+    });
+  }
 
-    // 1. Log in and add an item to the cart
-    await loginPage.login(
-      testData.validUser.username,
-      testData.validUser.password
-    );
-    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
-    await inventoryPage.addItemToCart(item);
-    await expect(inventoryPage.shoppingCartBadge).toHaveText('1');
+  test(
+    'TC_NEG_003 - Checkout form accepts boundary, special-character and alphanumeric input',
+    {
+      annotation: {
+        type: 'known-issue',
+        description: 'SauceDemo has no length limit or input validation on these fields',
+      },
+    },
+    async ({ page, loggedIn, inventoryPage, cartPage, stepOnePage, stepTwoPage }) => {
+      const longFirstName = 'A'.repeat(260);
+      const specialCharsLastName = '!@#$%^&*()_+{}:"<>?~`-=[]\\;\',./';
+      const alphanumericPostalCode = 'SW1A 1AA 90210-AB12';
 
-    // 2. Navigate to Checkout Step One
-    await inventoryPage.openCart();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
-    await cartPage.proceedToCheckout();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
+      await inventoryPage.addItemToCart(PRODUCTS.BACKPACK);
+      await expect(inventoryPage.shoppingCartBadge).toHaveText('1');
+      await inventoryPage.openCart();
+      await cartPage.proceedToCheckout();
+      await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
 
-    // 3. Input boundary/fuzz data into all customer fields
-    await stepOnePage.firstNameInput.fill(longFirstName);
-    await stepOnePage.lastNameInput.fill(specialCharsLastName);
-    await stepOnePage.postalCodeInput.fill(alphanumericPostalCode);
+      await stepOnePage.firstNameInput.fill(longFirstName);
+      await stepOnePage.lastNameInput.fill(specialCharsLastName);
+      await stepOnePage.postalCodeInput.fill(alphanumericPostalCode);
 
-    // Verify fields accepted the values without truncating or crashing the UI
-    await expect(stepOnePage.firstNameInput).toHaveValue(longFirstName);
-    await expect(stepOnePage.lastNameInput).toHaveValue(specialCharsLastName);
-    await expect(stepOnePage.postalCodeInput).toHaveValue(alphanumericPostalCode);
+      await expect(stepOnePage.firstNameInput).toHaveValue(longFirstName);
+      await expect(stepOnePage.lastNameInput).toHaveValue(specialCharsLastName);
+      await expect(stepOnePage.postalCodeInput).toHaveValue(alphanumericPostalCode);
 
-    // 4. Click 'Continue'
-    await stepOnePage.continueButton.click();
+      await stepOnePage.continueButton.click();
 
-    // Application Behavior Check:
-    // SauceDemo lacks input sanitization and length limits on these fields,
-    // so it accepts the inputs and routes directly to Step Two (Overview).
-    await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_TWO));
-    await expect(stepTwoPage.title).toHaveText('Checkout: Overview');
-  });
-  test('TC_NEG_004 - Verify checkout form handles XSS and script injection payloads safely without execution', async ({ page }) => {
-    const item = 'Sauce Labs Backpack';
+      await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_TWO));
+      await expect(stepTwoPage.title).toHaveText(HEADERS.CHECKOUT_OVERVIEW);
+    }
+  );
+
+  test('TC_NEG_004 - Script-injection payloads stay as literal text and do not execute', async ({
+    page,
+    loggedIn,
+    inventoryPage,
+    cartPage,
+    stepOnePage,
+    stepTwoPage,
+  }) => {
     const scriptPayload = '<script>alert("xss")</script>';
     const imgPayload = '<img src=x onerror=alert(1)>';
 
-    // Track unexpected dialog popups (to fail test immediately if script executes)
+    // Fail the test if any alert/confirm/prompt dialog appears
     let dialogTriggered = false;
     page.on('dialog', async (dialog) => {
       dialogTriggered = true;
       await dialog.dismiss();
     });
 
-    // 1. Log in and add an item to the cart
-    await loginPage.login(
-      testData.validUser.username,
-      testData.validUser.password
-    );
-    await expect(page).toHaveURL(new RegExp(ROUTES.INVENTORY));
-    await inventoryPage.addItemToCart(item);
+    await inventoryPage.addItemToCart(PRODUCTS.BACKPACK);
     await expect(inventoryPage.shoppingCartBadge).toHaveText('1');
-
-    // 2. Navigate to Checkout Step One
     await inventoryPage.openCart();
-    await expect(page).toHaveURL(new RegExp(ROUTES.CART));
     await cartPage.proceedToCheckout();
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_ONE));
 
-    // 3. Input script payloads into First Name and Postal Code
     await stepOnePage.firstNameInput.fill(scriptPayload);
     await stepOnePage.lastNameInput.fill(testData.customer.lastName);
     await stepOnePage.postalCodeInput.fill(imgPayload);
 
-    // Verify fields retain inputs as literal text
     await expect(stepOnePage.firstNameInput).toHaveValue(scriptPayload);
     await expect(stepOnePage.postalCodeInput).toHaveValue(imgPayload);
 
-    // 4. Click 'Continue'
     await stepOnePage.continueButton.click();
 
-    // Verify navigation proceeds to Step Two without unhandled script execution
     await expect(page).toHaveURL(new RegExp(ROUTES.CHECKOUT_STEP_TWO));
-    await expect(stepTwoPage.title).toHaveText('Checkout: Overview');
-
-    // Confirm no alert/confirm/prompt was triggered by the injection
+    await expect(stepTwoPage.title).toHaveText(HEADERS.CHECKOUT_OVERVIEW);
     expect(dialogTriggered).toBe(false);
   });
 });
