@@ -70,7 +70,7 @@ playwright-swaglabs-js/
 - **Defect and negative testing:** Covers the intentional `problem_user` defects, checkout form validations, session and route protection, boundary inputs and script-injection payloads. Tests that document current SauceDemo behaviour that is arguably a defect carry a `known-issue` annotation.
 - **Smoke tag:** The critical journeys are tagged `@smoke` and can be run on their own with `npm run test:smoke`.
 - **Data kept separate:** Credentials and customer data live in `test-data/users.json`, and routes, product names, headers, error text and expected totals live in `utils/constants.js`.
-- **CI reporting:** The HTML report is uploaded as a build artifact on every run, and the latest report is published to GitHub Pages after pushes to the main branch and after the nightly run.
+- **CI reporting:** The HTML report is uploaded as a build artifact on every run, and the latest report is published to GitHub Pages after pushes to the main branch and after every scheduled daily run.
 
 ---
 
